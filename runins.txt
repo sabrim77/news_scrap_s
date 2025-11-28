@@ -1,0 +1,16 @@
+cd path\to\GURU-2
+python -m venv venv
+venv\Scripts\activate
+pip install requests beautifulsoup4 feedparser
+
+
+cd D:\guru-2
+python -m core.runner
+python -m core.runner 5 
+
+python -m core.peek
+
+python -m tests.manual_test_risingbd       # ✅
+python -m tests.manual_test_bdnews24.py
+
+ python -m tests.manual_test_bdnews24
