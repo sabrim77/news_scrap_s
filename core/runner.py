@@ -36,7 +36,7 @@ from scrapers.bd import (
     bdnews24,
     samakal,
     ittefaq,
-    kalerkontho,
+    kalerkantho,
     deshrupantor,
 )
 
@@ -71,7 +71,7 @@ PARSERS: Dict[str, Callable[[Any], Dict[str, Optional[str]]]] = {
     "bdnews24": bdnews24.parse,
     "samakal": samakal.parse,
     "ittefaq": ittefaq.parse,
-    "kalerkontho": kalerkontho.parse,
+    "kalerkantho":  kalerkantho.parse,
     "deshrupantor": deshrupantor.parse,
 
     # International

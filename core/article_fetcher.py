@@ -11,6 +11,7 @@ Responsibilities:
 
 from __future__ import annotations
 
+import atexit
 import logging
 from typing import Optional, Dict, TYPE_CHECKING
 
@@ -44,7 +45,7 @@ def _get_browser() -> Optional["BrowserScraper"]:
     Lazily initialize a shared BrowserScraper instance.
 
     Returns:
-        BrowserScraper or None
+        BrowserScraper or None if unavailable.
     """
     global _BROWSER
 
@@ -66,6 +67,7 @@ def _get_browser() -> Optional["BrowserScraper"]:
         browser.__enter__()
         _BROWSER = browser
         return _BROWSER
+
     except Exception as exc:
         logger.exception("Failed to initialize BrowserScraper: %s", exc)
         return None
@@ -106,9 +108,40 @@ def _get_hybrid(portal_id: str) -> Optional["HybridScraper"]:
             hard_domains,
         )
         return hybrid
+
     except Exception as exc:
         logger.exception("Unable to create HybridScraper for %s: %s", portal_id, exc)
         return None
+
+
+# --- graceful shutdown for shared BrowserScraper ---
+
+def shutdown() -> None:
+    """
+    Close the shared BrowserScraper cleanly. Safe to call multiple times.
+    Also clears cached HybridScraper instances.
+    """
+    global _BROWSER, _HYBRID_BY_PORTAL
+
+    try:
+        if _BROWSER is not None:
+            # We opened via __enter__, so mirror with __exit__
+            try:
+                _BROWSER.__exit__(None, None, None)
+            except AttributeError:
+                # If BrowserScraper in future only exposes a 'close' method.
+                close = getattr(_BROWSER, "close", None)
+                if callable(close):
+                    close()
+    except Exception as exc:
+        logger.warning("Browser shutdown warning: %s", exc)
+    finally:
+        _BROWSER = None
+        _HYBRID_BY_PORTAL = {}
+
+
+# Ensure browser is closed when the process exits
+atexit.register(shutdown)
 
 
 # ============================================================
@@ -119,11 +152,14 @@ def fetch_article_soup(portal: str, url: str) -> Optional[BeautifulSoup]:
     """
     Unified HTML fetcher used by the runner.
 
-    scrape_mode:
-        simple     → BaseScraper
-        hybrid     → Base + Browser fallback
-        browser    → Browser-only
-        rss_only   → skip
+    scrape_mode (from config.portals):
+        simple     → BaseScraper only
+        hybrid     → HybridScraper (base + browser smart fallback)
+        browser    → Browser-only via HybridScraper
+        rss_only   → skip HTML fetch (returns None)
+
+    Returns:
+        BeautifulSoup instance if fetch succeeded, else None.
     """
 
     cfg = PORTALS.get(portal)
@@ -169,6 +205,8 @@ def fetch_article_soup(portal: str, url: str) -> Optional[BeautifulSoup]:
             logger.warning("Fallback simple fetch failed for %s (%s)", url, exc)
             return None
 
+    # For 'browser' mode, force browser-only in HybridScraper;
+    # otherwise let HybridScraper decide automatically.
     hybrid_mode = "browser" if mode == "browser" else "auto"
 
     try:
