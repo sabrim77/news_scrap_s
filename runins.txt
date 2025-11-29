@@ -14,3 +14,5 @@ python -m tests.manual_test_risingbd       # ✅
 python -m tests.manual_test_bdnews24.py
 
  python -m tests.manual_test_bdnews24
+ 
+python -m frontend.main

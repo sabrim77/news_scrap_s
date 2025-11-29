@@ -1,0 +1,14 @@
+requests
+feedparser
+beautifulsoup4
+lxml
+playwright
+python-dateutil
+rich
+tqdm
+python-dotenv
+fastapi
+uvicorn[standard]
+pydantic
+feedparser
+httpx

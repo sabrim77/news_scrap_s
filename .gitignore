@@ -1,4 +1,15 @@
+# Virtualenv
 venv/
+
+# Python cache
 __pycache__/
 *.pyc
-data/
+
+# Local data
+data/news.db
+data/news.db-*
+data/seen.json
+
+# OS junk (optional)
+.DS_Store
+Thumbs.db
